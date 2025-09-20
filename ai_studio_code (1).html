@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store</title>
+    <style>
+        :root {
+            --bg-dark: #0f0c29;
+            --bg-med: #24243e;
+            --bg-light: #302b63;
+            --accent-cyan: #00ffff;
+            --accent-purple: #9400D3;
+            --text-light: #f0f0f0;
+            --text-dark: #cccccc;
+            --success-glow: #00ff7f;
+            --error-glow: #ff4d4d;
+            --border-radius-large: 16px;
+            --border-radius-small: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif, system-ui;
+            background: linear-gradient(-45deg, var(--bg-dark), var(--bg-med), var(--bg-light), #24243e);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: var(--text-light);
+            line-height: 1.6;
+            overflow-x: hidden;
+            padding-top: 80px; /* Space for fixed header */
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- Glassmorphism & Cards --- */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: var(--border-radius-large);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            padding: 2rem;
+        }
+
+        /* --- Header & Navigation --- */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(15, 12, 41, 0.5);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+        
+        .hamburger-menu {
+            font-size: 2rem;
+            cursor: pointer;
+            z-index: 1002;
+            transition: transform 0.3s ease;
+        }
+        .hamburger-menu:hover { transform: scale(1.1); }
+        
+        .brand-info {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .brand-logo { height: 40px; border-radius: 50%; }
+        .brand-name { font-size: 1.5rem; font-weight: 600; text-shadow: 0 0 5px var(--accent-cyan); }
+
+        /* --- Slide-in Menu --- */
+        #slide-in-menu {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 300px;
+            height: 100%;
+            background: var(--bg-dark);
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            z-index: 1001;
+            transition: left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding-top: 80px;
+            display: flex;
+            flex-direction: column;
+        }
+        #slide-in-menu.open { left: 0; }
+        #slide-in-menu a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 1.1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        #slide-in-menu a:hover {
+            background: var(--accent-purple);
+            color: white;
+            padding-left: 2rem;
+            text-shadow: 0 0 8px white;
+        }
+        #user-info { padding: 1rem 1.5rem; color: var(--accent-cyan); font-weight: 600; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+
+        /* --- Main Content --- */
+        .container { max-width: 1200px; margin: 2rem auto; padding: 1rem; }
+        .view { display: none; animation: fadeIn 0.5s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* --- Search Bar --- */
+        .search-bar { margin-bottom: 2rem; text-align: center; }
+        #search-input {
+            width: 50%;
+            max-width: 400px;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+        #search-input:focus { width: 70%; max-width: 600px; }
+
+        /* --- Product Grid --- */
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+        .product-card {
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+        .product-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 0 15px var(--accent-cyan), 0 0 30px var(--accent-cyan);
+        }
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: var(--border-radius-large) var(--border-radius-large) 0 0;
+        }
+        .card-content { padding: 1.5rem; text-align: center; }
+        .card-content h3 { margin-bottom: 0.5rem; }
+
+        /* --- Buttons --- */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border: 1px solid var(--accent-cyan);
+            border-radius: var(--border-radius-small);
+            background: transparent;
+            color: var(--accent-cyan);
+            font-weight: 600;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+            box-shadow: 0 0 5px var(--accent-cyan), 0 0 15px var(--accent-cyan), 0 0 25px var(--accent-cyan);
+            transform: scale(1.05);
+        }
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.7);
+            transform: scale(0);
+            animation: ripple-effect 0.6s linear;
+        }
+        @keyframes ripple-effect {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        /* --- Modal --- */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); display: none; justify-content: center;
+            align-items: center; z-index: 2000; opacity: 0; transition: opacity 0.3s ease;
+        }
+        .modal.show { display: flex; opacity: 1; }
+        .modal-content {
+            width: 90%; max-width: 800px; max-height: 90vh;
+            overflow-y: auto; transform: scale(0.9); transition: transform 0.3s ease;
+        }
+        .modal.show .modal-content { transform: scale(1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; }
+        .btn-icon { background: none; border: none; color: var(--text-light); font-size: 2rem; cursor: pointer; }
+        
+        #product-detail-content { display: grid; grid-template-columns: 1fr; gap: 2rem; }
+        @media(min-width: 768px) { #product-detail-content { grid-template-columns: 1fr 1fr; } }
+        #product-detail-img { width: 100%; border-radius: var(--border-radius-large); }
+        #product-detail-price { font-size: 1.5rem; color: var(--accent-cyan); text-shadow: 0 0 8px var(--accent-cyan); }
+        #product-detail-price s { color: var(--text-dark); font-size: 1rem; }
+        
+        /* --- Auth Modal --- */
+        #auth-modal .tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 1.5rem; }
+        #auth-modal .tab-btn { flex: 1; text-align: center; }
+        
+        /* --- Footer/Bottom Bar --- */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(15, 12, 41, 0.5);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 0.5rem;
+            gap: 1rem;
+            z-index: 900;
+        }
+        .bottom-bar-btn {
+            background: none; border: none; color: var(--text-dark);
+            cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem;
+        }
+        .bottom-bar-btn:hover { color: var(--accent-cyan); text-shadow: 0 0 5px var(--accent-cyan); }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div id="hamburger" class="hamburger-menu">&#9776;</div>
+        <div class="brand-info">
+            <img id="header-logo" src="https://via.placeholder.com/40" alt="Brand Logo" class="brand-logo">
+            <span id="header-brand-name" class="brand-name">Loading...</span>
+        </div>
+    </header>
+
+    <nav id="slide-in-menu">
+        <!-- Menu links will be injected here by JS -->
+    </nav>
+
+    <div class="container">
+        <!-- Products View -->
+        <div id="products-view" class="view active">
+            <div class="search-bar">
+                <input type="text" id="search-input" class="glass-card" placeholder="Search products...">
+            </div>
+            <div id="product-grid" class="grid"></div>
+        </div>
+        <!-- Bookmarks View -->
+        <div id="bookmarks-view" class="view">
+            <h2>My Bookmarks</h2>
+            <div id="bookmark-grid" class="grid"></div>
+        </div>
+        <!-- Purchase History View -->
+        <div id="history-view" class="view">
+            <h2>My Purchase History</h2>
+            <div id="history-list"></div>
+        </div>
+        <!-- Contact Us View -->
+        <div id="contact-view" class="view">
+            <div class="glass-card">
+                <h2>Contact Us</h2>
+                <div id="contact-details"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bottom-bar">
+        <button class="bottom-bar-btn" data-policy="refund">Refund Policy</button>
+        <button class="bottom-bar-btn" data-policy="tnc">T&C</button>
+        <button class="bottom-bar-btn" data-policy="delivery">Delivery Policy</button>
+        <button class="bottom-bar-btn" data-policy="privacy">Privacy Policy</button>
+        <a id="social-youtube" href="#" target="_blank" class="bottom-bar-btn" style="text-decoration:none;">YouTube</a>
+        <a id="social-telegram" href="#" target="_blank" class="bottom-bar-btn" style="text-decoration:none;">Telegram</a>
+    </div>
+
+    <!-- Modals -->
+    <div id="product-detail-modal" class="modal">
+        <div class="glass-card modal-content">
+            <div class="modal-header">
+                <h2 id="product-detail-title"></h2>
+                <button class="btn-icon" onclick="closeModal('product-detail-modal')">&times;</button>
+            </div>
+            <div id="product-detail-content">
+                <img id="product-detail-img" src="" alt="Product Image">
+                <div>
+                    <p id="product-detail-desc"></p>
+                    <h3 id="product-detail-price"></h3>
+                    <br>
+                    <button id="buy-now-btn" class="btn">Buy Now</button>
+                    <button id="bookmark-btn" class="btn" style="margin-left:1rem; border-color:var(--accent-purple); color:var(--accent-purple);">Bookmark</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="buy-now-modal" class="modal">
+        <div class="glass-card modal-content">
+            <div class="modal-header">
+                <h2>Enter Your Details</h2>
+                <button class="btn-icon" onclick="closeModal('buy-now-modal')">&times;</button>
+            </div>
+            <form id="purchase-form">
+                <input type="text" id="user-name" placeholder="Full Name" required>
+                <input type="email" id="user-email" placeholder="Email Address" required>
+                <input type="tel" id="user-phone" placeholder="Phone Number" required>
+                <button type="submit" class="btn">Proceed to Payment</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="auth-modal" class="modal">
+        <div class="glass-card modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2>Join Us</h2>
+                <button class="btn-icon" onclick="closeModal('auth-modal')">&times;</button>
+            </div>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="login">Login</button>
+                <button class="tab-btn" data-tab="signup">Signup</button>
+            </div>
+            <div id="login-form-container" class="tab-content active">
+                <form id="login-form">
+                    <input type="email" id="login-email" placeholder="Email" required>
+                    <input type="password" id="login-password" placeholder="Password" required>
+                    <button type="submit" class="btn">Login</button>
+                </form>
+            </div>
+            <div id="signup-form-container" class="tab-content">
+                <form id="signup-form">
+                    <input type="email" id="signup-email" placeholder="Email" required>
+                    <input type="password" id="signup-password" placeholder="Password" required>
+                    <button type="submit" class="btn">Sign Up</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="policy-modal" class="modal">
+        <div class="glass-card modal-content">
+            <div class="modal-header">
+                <h2 id="policy-title"></h2>
+                <button class="btn-icon" onclick="closeModal('policy-modal')">&times;</button>
+            </div>
+            <div id="policy-content" style="white-space: pre-wrap;"></div>
+        </div>
+    </div>
+    
+    <!-- Self-contained JS + CSS. कोई external dependency नहीं -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, get, set, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+        
+        // ========== PASTE YOUR FIREBASE CONFIG HERE ==========
+        const firebaseConfig = {
+  apiKey: "AIzaSyB3PkdlJhLfJLmkVl-JeegO2FbWLGO08mA",
+  authDomain: "whatsapp-d93f2.firebaseapp.com",
+  databaseURL: "https://whatsapp-d93f2-default-rtdb.firebaseio.com",
+  projectId: "whatsapp-d93f2",
+  storageBucket: "whatsapp-d93f2.firebasestorage.app",
+  messagingSenderId: "164626007616",
+  appId: "1:164626007616:web:ced418c93eeee7cc0841a5"
+};
+        // ========== END FIREBASE CONFIG SECTION ==========
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        let allProducts = {};
+        let currentUser = null;
+        let currentProduct = null;
+
+        // --- App Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initApp();
+            addEventListeners();
+        });
+
+        function initApp() {
+            fetchBrandInfo();
+            fetchContactInfo();
+            fetchProducts();
+        }
+
+        // --- Auth State ---
+        onAuthStateChanged(auth, user => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('user-email').value = user.email;
+            }
+            updateUIForAuthState();
+        });
+        
+        // --- Data Fetching ---
+        function fetchBrandInfo() {
+            onValue(ref(db, 'meta/brand'), (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    document.getElementById('header-brand-name').textContent = data.name;
+                    document.getElementById('header-logo').src = data.logoUrl;
+                    document.title = data.name;
+                }
+            });
+        }
+
+        function fetchContactInfo() {
+            onValue(ref(db, 'meta/contact'), snapshot => {
+                const data = snapshot.val();
+                if(!data) return;
+                const detailsHtml = `
+                    <p><strong>Brand:</strong> ${data.brandName}</p>
+                    <p><strong>Operator:</strong> ${data.operator}</p>
+                    <p><strong>Location:</strong> ${data.cityStatePin}</p>
+                    <p><strong>Email:</strong> ${data.email}</p>
+                    <p><strong>Phone:</strong> ${data.phone}</p>
+                    <p><strong>Address:</strong> ${data.address}</p>
+                `;
+                document.getElementById('contact-details').innerHTML = detailsHtml;
+                document.getElementById('social-youtube').href = data.socialYoutube || '#';
+                document.getElementById('social-telegram').href = data.socialTelegram || '#';
+            });
+        }
+
+        function fetchProducts() {
+            onValue(ref(db, 'products'), (snapshot) => {
+                allProducts = snapshot.val() || {};
+                renderProducts(allProducts);
+            });
+        }
+
+        // --- UI Rendering ---
+        function renderProducts(products) {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = '';
+            if (Object.keys(products).length === 0) {
+                grid.innerHTML = '<p>No products available right now.</p>';
+                return;
+            }
+            Object.entries(products).forEach(([id, product]) => {
+                const card = document.createElement('div');
+                card.className = 'glass-card product-card';
+                card.dataset.id = id;
+                card.innerHTML = `
+                    <img src="${product.imageUrl}" alt="${product.title}" class="product-image">
+                    <div class="card-content">
+                        <h3>${product.title}</h3>
+                        <p>₹${product.discountedPrice} &nbsp; <s>₹${product.realPrice}</s></p>
+                        <br>
+                        <button class="btn view-btn">View</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function updateUIForAuthState() {
+            const menu = document.getElementById('slide-in-menu');
+            if (currentUser) {
+                menu.innerHTML = `
+                    <div id="user-info">${currentUser.email}</div>
+                    <a href="#" class="nav-link" data-view="products">Products</a>
+                    <a href="#" class="nav-link" data-view="history">Purchase History</a>
+                    <a href="#" class="nav-link" data-view="bookmarks">Bookmarks</a>
+                    <a href="#" class="nav-link" data-view="contact">Contact Us</a>
+                    <a href="#" id="logout-link">Logout</a>
+                `;
+            } else {
+                menu.innerHTML = `
+                    <a href="#" class="nav-link" data-view="products">Products</a>
+                    <a href="#" class="nav-link" data-view="bookmarks">Bookmarks <small>(Login required)</small></a>
+                    <a href="#" class="nav-link" data-view="contact">Contact Us</a>
+                    <a href="#" id="login-signup-link">Login / Signup</a>
+                `;
+            }
+            addNavEventListeners();
+        }
+
+        // --- Event Listeners ---
+        function addEventListeners() {
+            document.getElementById('hamburger').addEventListener('click', toggleMenu);
+            document.getElementById('search-input').addEventListener('input', handleSearch);
+            document.getElementById('product-grid').addEventListener('click', handleGridClick);
+
+            // Auth Modal
+            document.querySelector('#auth-modal .tabs').addEventListener('click', handleAuthTabClick);
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+            document.getElementById('signup-form').addEventListener('submit', handleSignup);
+
+            // Purchase Flow
+            document.getElementById('buy-now-btn').addEventListener('click', handleBuyNow);
+            document.getElementById('purchase-form').addEventListener('submit', handlePurchaseSubmit);
+            document.getElementById('bookmark-btn').addEventListener('click', handleBookmark);
+            
+            // Bottom bar
+            document.querySelector('.bottom-bar').addEventListener('click', (e) => {
+                if(e.target.matches('.bottom-bar-btn')) {
+                    const policy = e.target.dataset.policy;
+                    if (policy) showPolicyModal(policy);
+                }
+            });
+
+            // Ripple effect for buttons
+            document.body.addEventListener('click', e => {
+                if (e.target.matches('.btn')) createRipple(e);
+            });
+        }
+        
+        function addNavEventListeners() {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', e => {
+                    e.preventDefault();
+                    const view = e.target.dataset.view;
+                    if (view === 'bookmarks' && !currentUser) {
+                        openModal('auth-modal');
+                    } else {
+                        showView(view);
+                    }
+                    toggleMenu();
+                });
+            });
+
+            const loginLink = document.getElementById('login-signup-link');
+            if (loginLink) loginLink.addEventListener('click', () => { openModal('auth-modal'); toggleMenu(); });
+
+            const logoutLink = document.getElementById('logout-link');
+            if (logoutLink) logoutLink.addEventListener('click', () => { signOut(auth); toggleMenu(); });
+        }
+        
+        // --- Event Handlers ---
+        function handleGridClick(e) {
+            if (e.target.classList.contains('view-btn')) {
+                const card = e.target.closest('.product-card');
+                const productId = card.dataset.id;
+                showProductDetail(productId);
+            }
+        }
+
+        function handleSearch(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredProducts = Object.entries(allProducts).reduce((acc, [id, product]) => {
+                if (product.title.toLowerCase().includes(searchTerm) || product.description.toLowerCase().includes(searchTerm)) {
+                    acc[id] = product;
+                }
+                return acc;
+            }, {});
+            renderProducts(filteredProducts);
+        }
+
+        function handleAuthTabClick(e) {
+            if (e.target.matches('.tab-btn')) {
+                const targetTab = e.target.dataset.tab;
+                document.querySelectorAll('#auth-modal .tab-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                document.querySelectorAll('#auth-modal .tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(`${targetTab}-form-container`).classList.add('active');
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            signInWithEmailAndPassword(auth, email, password)
+                .then(() => closeModal('auth-modal'))
+                .catch(err => alert(`Login Failed: ${err.message}`));
+        }
+
+        function handleSignup(e) {
+            e.preventDefault();
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            createUserWithEmailAndPassword(auth, email, password)
+                .then(() => closeModal('auth-modal'))
+                .catch(err => alert(`Signup Failed: ${err.message}`));
+        }
+        
+        function handleBuyNow() {
+            if (!currentUser) {
+                alert('Please log in to purchase.');
+                openModal('auth-modal');
+                return;
+            }
+            closeModal('product-detail-modal');
+            openModal('buy-now-modal');
+        }
+
+        async function handlePurchaseSubmit(e) {
+            e.preventDefault();
+            const userInput = {
+                name: document.getElementById('user-name').value,
+                email: document.getElementById('user-email').value,
+                phone: document.getElementById('user-phone').value,
+            };
+            
+            const orderData = {
+                productId: currentProduct.id,
+                productSnapshot: currentProduct.data,
+                userInput: userInput,
+                userId: currentUser.uid,
+                createdAt: serverTimestamp() // Use server timestamp
+            };
+            
+            const newOrderRef = push(ref(db, 'orders'));
+            await set(newOrderRef, orderData);
+            await set(ref(db, `users/${currentUser.uid}/purchases/${newOrderRef.key}`), true);
+
+            alert('Order placed! Redirecting to payment...');
+            window.location.href = currentProduct.data.razorpayLink;
+        }
+
+        async function handleBookmark() {
+            if (!currentUser) {
+                alert('Please log in to use bookmarks.');
+                openModal('auth-modal');
+                return;
+            }
+            const bookmarkRef = ref(db, `users/${currentUser.uid}/bookmarks/${currentProduct.id}`);
+            const snapshot = await get(bookmarkRef);
+            if (snapshot.exists()) {
+                await set(bookmarkRef, null); // Remove bookmark
+                alert('Removed from bookmarks.');
+            } else {
+                await set(bookmarkRef, true); // Add bookmark
+                alert('Added to bookmarks.');
+            }
+        }
+
+        // --- View & Modal Management ---
+        function toggleMenu() { document.getElementById('slide-in-menu').classList.toggle('open'); }
+        window.openModal = (id) => document.getElementById(id).classList.add('show');
+        window.closeModal = (id) => document.getElementById(id).classList.remove('show');
+
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            const view = document.getElementById(`${viewId}-view`);
+            if (view) {
+                view.classList.add('active');
+                // Load data for specific views
+                if (viewId === 'bookmarks') loadBookmarks();
+                if (viewId === 'history') loadPurchaseHistory();
+            }
+        }
+        
+        function showProductDetail(productId) {
+            currentProduct = { id: productId, data: allProducts[productId] };
+            document.getElementById('product-detail-title').textContent = currentProduct.data.title;
+            document.getElementById('product-detail-img').src = currentProduct.data.imageUrl;
+            document.getElementById('product-detail-desc').textContent = currentProduct.data.description;
+            document.getElementById('product-detail-price').innerHTML = `₹${currentProduct.data.discountedPrice} &nbsp; <s>₹${currentProduct.data.realPrice}</s>`;
+            openModal('product-detail-modal');
+        }
+        
+        async function loadBookmarks() {
+            const grid = document.getElementById('bookmark-grid');
+            grid.innerHTML = '<p>Loading bookmarks...</p>';
+            if (!currentUser) return;
+
+            const bookmarksRef = ref(db, `users/${currentUser.uid}/bookmarks`);
+            const snapshot = await get(bookmarksRef);
+            const bookmarkedIds = snapshot.val();
+            
+            if (!bookmarkedIds) {
+                grid.innerHTML = '<p>You have no bookmarked items.</p>';
+                return;
+            }
+            
+            grid.innerHTML = '';
+            Object.keys(bookmarkedIds).forEach(productId => {
+                const product = allProducts[productId];
+                if(product) {
+                    const card = document.createElement('div');
+                    card.className = 'glass-card product-card';
+                    card.dataset.id = productId;
+                    card.innerHTML = `<img src="${product.imageUrl}" alt="${product.title}" class="product-image"><div class="card-content"><h3>${product.title}</h3><button class="btn view-btn">View</button></div>`;
+                    grid.appendChild(card);
+                }
+            });
+        }
+        
+        async function loadPurchaseHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '<p>Loading history...</p>';
+            if (!currentUser) return;
+
+            const historyRef = ref(db, `users/${currentUser.uid}/purchases`);
+            const snapshot = await get(historyRef);
+            const purchaseIds = snapshot.val();
+            
+            if (!purchaseIds) {
+                list.innerHTML = '<p>You have not made any purchases.</p>';
+                return;
+            }
+            
+            list.innerHTML = '';
+            for (const orderId of Object.keys(purchaseIds)) {
+                const orderSnapshot = await get(ref(db, `orders/${orderId}`));
+                const order = orderSnapshot.val();
+                if (order) {
+                    const item = document.createElement('div');
+                    item.className = 'glass-card';
+                    item.style.marginBottom = '1rem';
+                    item.innerHTML = `
+                        <h4>${order.productSnapshot.title}</h4>
+                        <p>Purchased on: ${new Date(order.createdAt).toLocaleDateString()}</p>
+                        <p>Price: ₹${order.productSnapshot.discountedPrice}</p>
+                    `;
+                    list.appendChild(item);
+                }
+            }
+        }
+        
+        function showPolicyModal(policyType) {
+            const policies = {
+                refund: { title: 'Refund Policy', content: 'Our refund policy is simple. If you are not satisfied with the product, you can request a refund within 7 days of purchase. The product must be in its original condition. Contact our support team to initiate the process.'},
+                tnc: { title: 'Terms & Conditions', content: 'By using our service, you agree to these terms. All content is property of the brand. You may not misuse our services. We reserve the right to terminate accounts that violate our policies.'},
+                delivery: { title: 'Delivery Policy', content: 'For digital products, delivery is instant via email. For physical products, shipping takes 5-7 business days within the specified regions. Tracking information will be provided once the order is shipped.'},
+                privacy: { title: 'Privacy Policy', content: 'We value your privacy. We collect personal information like name, email, and address for order processing only. We do not sell your data to third parties. Our website uses secure protocols to protect your information.'},
+            };
+            const policy = policies[policyType];
+            if(policy) {
+                document.getElementById('policy-title').textContent = policy.title;
+                document.getElementById('policy-content').textContent = policy.content;
+                openModal('policy-modal');
+            }
+        }
+
+        // --- Helper: Ripple Effect ---
+        function createRipple(event) {
+            const button = event.currentTarget;
+            const circle = document.createElement("span");
+            const diameter = Math.max(button.clientWidth, button.clientHeight);
+            const radius = diameter / 2;
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${event.clientX - button.offsetLeft - radius}px`;
+            circle.style.top = `${event.clientY - button.offsetTop - radius}px`;
+            circle.classList.add("ripple");
+            
+            const ripple = button.getElementsByClassName("ripple")[0];
+            if (ripple) ripple.remove();
+            
+            button.appendChild(circle);
+        }
+
+    </script>
+</body>
+</html>
